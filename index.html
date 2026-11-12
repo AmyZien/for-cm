@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<!--
+  cowboy_football_template.html
+  This is the TEMPLATE. Don't share this file; share the finished
+  "Stillwater Lodging Performance.html" that the Python script makes.
+  The script swaps the DATA placeholder (down in the <script>
+  section) for the real numbers.
+
+  Layout of this file:
+    1. <style>   - how things look (colors, fonts, spacing)
+    2. <body>    - what's on the page (header, tabs, filters, empty boxes)
+    3. <script>  - the code that fills those boxes with numbers
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stillwater Lodging Performance - OSU Football</title>
+<!-- Fonts from Google. If someone opens this offline, the page still works with backup fonts. -->
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  /* ---------- Colors and fonts, defined once and reused everywhere ---------- */
+  :root {
+    --red: #FE5C00;        /* OSU orange */
+    --black: #000000;      /* black */
+    --ink: #1b1b1b;        /* body text */
+    --muted: #6a6a6a;      /* smaller gray text */
+    --line: #d9d9d9;       /* borders */
+    --panel: #ffffff;      /* card backgrounds */
+    --page: #f3f3f3;       /* page background */
+    --heading-font: "Saira Condensed", "Arial Narrow", sans-serif;
+    --body-font: "Figtree", "Segoe UI", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--body-font); font-size: 15px; }
+
+  /* ---------- Header bar ---------- */
+  header { background: var(--black); color: #fff; padding: 20px 24px 16px; border-bottom: 5px solid var(--red); }
+  header h1 { font-family: var(--heading-font); font-weight: 700; font-size: 34px; margin: 0; letter-spacing: 0.5px; }
+  header .sub { margin: 4px 0 0; color: #cfcfcf; font-size: 14px; }
+
+  /* ---------- Tabs ---------- */
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 12px 24px 0; background: var(--page); }
+  .tabs button {
+    font-family: var(--heading-font); font-size: 17px; letter-spacing: 0.4px;
+    border: 1px solid var(--line); border-bottom: none; background: #e6e6e6; color: var(--ink);
+    padding: 8px 16px; cursor: pointer; border-radius: 6px 6px 0 0;
+  }
+  .tabs button.active { background: var(--panel); color: var(--red); border-top: 3px solid var(--red); }
+
+  /* ---------- Filter bar ---------- */
+  .filters { display: flex; flex-wrap: wrap; gap: 16px; padding: 14px 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .filters label { display: flex; flex-direction: column; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; gap: 4px; }
+  select { font-family: var(--body-font); font-size: 15px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: #fff; min-width: 130px; }
+
+  main { padding: 20px 24px 40px; max-width: 1400px; margin: 0 auto; }
+
+  /* Only the active tab's section shows. JavaScript moves the "active" class. */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ---------- Section headings and boxes ---------- */
+  h2 { font-family: var(--heading-font); font-weight: 500; font-size: 24px; margin: 28px 0 10px; }
+  h2:first-child { margin-top: 0; }
+  .note { color: var(--muted); font-size: 13px; margin: -4px 0 12px; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; }
+  .row-controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 12px; }
+
+  /* ---------- KPI cards ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--black); border-radius: 6px; padding: 14px 16px; }
+  .card .label { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .card .value { font-family: var(--heading-font); font-size: 34px; font-weight: 700; margin-top: 4px; }
+
+  /* ---------- Football Effect comparison ---------- */
+  .effect { width: 100%; border-collapse: collapse; }
+  .effect th, .effect td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--line); }
+  .effect th:first-child, .effect td:first-child { text-align: left; }
+  .effect thead th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .effect .lift td { font-weight: 700; border-bottom: none; }
+  .up { color: var(--red); }       /* home games beat away games: good news gets the red */
+  .down { color: var(--muted); }   /* never red for a negative */
+
+  /* ---------- Two sections side by side ---------- */
+  /* Two equal columns with 24px of space between them. */
+  .side-by-side { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 28px; }
+  /* Each column stacks its pieces top to bottom. min-width: 0 lets the
+     chart scroll sideways inside its column instead of pushing the page wider. */
+  .side-by-side > div { display: flex; flex-direction: column; min-width: 0; }
+  /* Make both white boxes stretch to the same height. */
+  .side-by-side .box { flex: 1; }
+  /* Give both title rows the same height so the boxes start at the same spot. */
+  .side-by-side .row-controls { min-height: 58px; margin-bottom: 4px; }
+  /* On a narrow screen (like a phone), go back to stacking them. */
+  @media (max-width: 900px) { .side-by-side { grid-template-columns: 1fr; } }
+
+  /* ---------- Bar chart (plain HTML boxes, no chart library needed) ---------- */
+  .chart { display: flex; align-items: flex-end; gap: 18px; height: 260px; padding: 24px 8px 0; border-bottom: 1px solid var(--ink); overflow-x: auto; }
+  .bar-group { flex: 1 0 70px; display: flex; flex-direction: column; align-items: center; height: 100%; }
+  .bars { flex: 1; display: flex; align-items: flex-end; gap: 4px; width: 100%; justify-content: center; }
+  .bar { width: 42%; max-width: 46px; position: relative; min-height: 1px; }
+  .bar.pre { background: var(--red); }
+  .bar.game { background: var(--black); }
+  .bar span { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 11px; white-space: nowrap; color: var(--ink); }
+  .chart-labels { display: flex; gap: 18px; padding: 6px 8px 0; overflow-x: hidden; }
+  .chart-labels div { flex: 1 0 70px; text-align: center; font-size: 12px; color: var(--muted); }
+  .legend { display: flex; gap: 18px; font-size: 13px; margin-top: 12px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; }
+  .side-by-side .note { min-height: 3em; } 
+
+  /* ---------- Season tables (Overview) ---------- */
+  /* Seasons run left to right, oldest to newest. The newest season gets a
+     red header and a light tint so the eye lands there first. */
+  table.season { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.season th, table.season td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.season th:first-child, table.season td:first-child { text-align: left; }
+  table.season thead th { font-family: var(--heading-font); font-size: 18px; font-weight: 500; border-bottom: 2px solid var(--ink); }
+  table.season thead th.current { background: var(--red); color: #fff; }
+  table.season td.current { background: #fff1e6; font-weight: 700; }
+  table.season td.change { font-weight: 700; }
+  table.season tbody tr:last-child td { border-bottom: none; }
+  table.season tr.small td { color: var(--muted); font-size: 13px; }
+ 
+  /* Season and Home/Away don't apply on the Overview tab, so hide them there.
+     The tab code below sets data-tab on <body> to whichever tab is open. */
+  body[data-tab="overview"] .season-filter { display: none; }
+
+  /* ---------- Cards beside the chart (By Game and Game Breakdown tabs) ---------- */
+  /* Two columns: cards get 2 parts of the width, the chart gets 3 (40/60). */
+  .top-row { display: grid; grid-template-columns: 2fr 3fr; gap: 24px; align-items: stretch; }
+  /* Each column stacks its heading row and its content top to bottom. */
+  .top-row > div { display: flex; flex-direction: column; min-width: 0; }
+  /* Cards: always 3 across (so 2 rows of 3), with slightly smaller numbers. */
+  .top-row .cards { grid-template-columns: repeat(3, 1fr); flex: 1; }
+  .top-row .card .value { font-size: 28px; }
+  /* Save room for two lines of note text in both headings so they line up. */
+  .top-row .note { min-height: 3em; }
+  /* The chart box stretches to match the height of the cards. */
+  .top-row .box { flex: 1; }
+  /* Headings in these narrower columns are a bit smaller and stay on one line.
+     The title/note stack takes whatever width the dropdown leaves over
+     (flex: 1, min-width: 0), and the note is allowed to wrap. */
+  .top-row h2 { font-size: 21px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top-row .row-controls { flex-wrap: nowrap; }
+  .top-row .row-controls > div { flex: 1; min-width: 0; }
+  /* A slightly shorter chart, so the cards beside it don't stretch too tall. */
+  .top-row .chart { height: 220px; }
+  /* Narrow screens: stack them again. */
+  @media (max-width: 1100px) { .top-row { grid-template-columns: 1fr; } }
+
+  /* ---------- Game Breakdown table ---------- */
+  /* Same look as the season tables on Overview: groups run left to right. */
+  table.season .group-note { color: var(--muted); font-size: 12px; font-weight: 400; font-family: var(--body-font); display: block; }
+
+  /* ---------- Game Breakdown table: three rows per measure ---------- */
+  /* The measure name (Occupancy, ADR...) sits at the top of its three rows. */
+  #breakdownTable td.measure { vertical-align: top; font-weight: 600; border-bottom: 1px solid var(--ink); }
+  /* The day type labels are smaller and gray, so the numbers stand out. */
+  #breakdownTable td.daytype { text-align: left; color: var(--muted); font-size: 13px; }
+  /* Weekend rows are bold, with a dark line under them to close each measure. */
+  #breakdownTable tr.weekend td { font-weight: 700; border-bottom: 1px solid var(--ink); }
+  #breakdownTable tr.weekend td.daytype { color: var(--ink); }
+
+  /* ---------- Game table ---------- */
+  .table-wrap { overflow-x: auto; }
+  table.games { width: 100%; border-collapse: collapse; background: var(--panel); font-size: 14px; }
+  table.games th { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; text-align: right; padding: 8px 10px; border-bottom: 2px solid var(--ink); white-space: nowrap; }
+  table.games th:nth-child(-n+3) { text-align: left; }
+  table.games td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #eee; white-space: nowrap; }
+  table.games td.info { text-align: left; vertical-align: top; white-space: normal; min-width: 170px; border-bottom: 1px solid var(--ink); }
+  table.games td.day, table.games td.date { text-align: left; }
+  table.games tr.weekend td { font-weight: 700; border-bottom: 1px solid var(--ink); }
+  .info strong { display: block; }
+  .info small { display: block; color: var(--muted); }
+
+  .placeholder { padding: 60px 20px; text-align: center; color: var(--muted); border: 2px dashed var(--line); border-radius: 6px; background: var(--panel); }
+
+  footer { padding: 16px 24px 30px; color: var(--muted); font-size: 12px; max-width: 1400px; margin: 0 auto; }
+</style>
+</head>
+
+<body data-tab="overview">
+
+<!-- ================= HEADER ================= -->
+<header>
+  <h1>Stillwater Lodging Performance</h1>
+  <p class="sub">Oklahoma State Football &nbsp;·&nbsp; Lodging data through <span id="through"></span></p>
+</header>
+
+<!-- ================= TABS =================
+     Each button's data-tab matches a section id below ("tab-" + name). -->
+<nav class="tabs">
+  <button data-tab="overview" class="active">Overview</button>
+  <button data-tab="weekend">By Game</button>
+  <button data-tab="breakdown">Game Breakdown</button>
+</nav>
+
+<!-- ================= FILTERS (apply to every tab) ================= -->
+<section class="filters">
+  <label class="season-filter">Season <select id="season" data-state="season"></select></label>
+  <label class="season-filter">Home or Away
+    <select id="homeAway" data-state="homeAway">
+      <option value="Home">Home</option>
+      <option value="Away">Away</option>
+      <option value="All">All Games</option>
+    </select>
+  </label>
+  <label>Lodging Type
+    <select id="lodging" data-state="lodging">
+      <option value="All">All Lodging</option>
+      <option value="Hotel">Hotel</option>
+      <option value="STR">Short-Term Rental</option>
+    </select>
+  </label>
+</section>
+
+<main>
+
+  <!-- ================= OVERVIEW TAB =================
+       Every season side by side, home-game weekends only.
+       The only control that changes it is Lodging Type. -->
+  <section id="tab-overview" class="tab-panel active">
+ 
+    <h2>Season Comparison</h2>
+    <p class="note">Home-game weekends. Each weekend is the night before the game plus game night.</p>
+    <div class="box table-wrap"><table class="season" id="seasonTable"></table></div>
+    <p class="note" id="seasonNote" style="margin-top:8px"></p>
+ 
+    <h2>The Football Effect</h2>
+    <p class="note">How much stronger home-game weekends are than away-game weekends in the same season. A Friday game counts Thursday and Friday nights.</p>
+    <div class="box table-wrap"><table class="season" id="effectTable"></table></div>
+ 
+  </section>
+  
+  <!-- ================= BY GAME TAB =================
+       Game-by-game view for the season picked in the Season dropdown.
+       (Its id is still "weekend" from when it was called By Game Weekend.) -->
+  <section id="tab-weekend" class="tab-panel">
+
+    <!-- Top area: cards on the left (40%), chart on the right (60%).
+         The "w-" at the front of every id keeps them different from the
+         same pieces on the other tab. Every id on a page has to be unique. -->
+    <div class="top-row">
+
+      <!-- LEFT COLUMN: season totals cards -->
+      <div>
+        <div class="row-controls">
+          <div>
+            <h2 id="w-cardsTitle" style="margin:0"></h2>
+            <p class="note" id="w-cardsNote" style="margin:4px 0 0"></p>
+          </div>
+          <label class="filters" style="padding:0;border:0;background:none">Day Type
+            <select data-state="dayType">
+              <option>Weekend</option>
+              <option>Game Day</option>
+              <option>Pre-Game Day</option>
+            </select>
+          </label>
+        </div>
+        <div class="cards" id="w-cards"></div>
+      </div>
+
+      <!-- RIGHT COLUMN: Measure by Game chart -->
+      <div>
+        <div class="row-controls">
+          <div>
+            <h2 id="w-chartTitle" style="margin:0"></h2>
+            <p class="note" style="margin:4px 0 0">Pre-Game Day compared with Game Day for each game. Games without lodging data yet appear empty.</p>
+          </div>
+          <label class="filters" style="padding:0;border:0;background:none">Measure
+            <select data-state="measure">
+              <option value="revpar">RevPAR</option>
+              <option value="adr">ADR</option>
+              <option value="occupancy">Occupancy</option>
+            </select>
+          </label>
+        </div>
+        <div class="box">
+          <div class="chart" id="w-chart"></div>
+          <div class="chart-labels" id="w-chartLabels"></div>
+          <div class="legend">
+            <span><i style="background:var(--red)"></i>Pre-Game Day</span>
+            <span><i style="background:var(--black)"></i>Game Day</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Game-by-game table -->
+    <h2>Game by Game</h2>
+    <p class="note">Weekend combines Pre-Game Day (the night before the game) and Game Day (game night), so a Friday game's weekend is Thursday and Friday nights.</p>
+    <div class="box table-wrap"><table class="games" id="gameTable"></table></div>
+
+  </section>
+
+  <!-- ================= GAME BREAKDOWN TAB =================
+       Same cards and chart as By Game, then a table that groups the
+       season's games by whatever is picked in the Group By dropdown. -->
+  <section id="tab-breakdown" class="tab-panel">
+
+    <!-- Top area: cards on the left (40%), chart on the right (60%).
+         The "b-" at the front of every id keeps them different from the
+         same pieces on the other tab. Every id on a page has to be unique. -->
+    <div class="top-row">
+
+      <!-- LEFT COLUMN: season totals cards -->
+      <div>
+        <div class="row-controls">
+          <div>
+            <h2 id="b-cardsTitle" style="margin:0"></h2>
+            <p class="note" id="b-cardsNote" style="margin:4px 0 0"></p>
+          </div>
+          <label class="filters" style="padding:0;border:0;background:none">Day Type
+            <select data-state="dayType">
+              <option>Weekend</option>
+              <option>Game Day</option>
+              <option>Pre-Game Day</option>
+            </select>
+          </label>
+        </div>
+        <div class="cards" id="b-cards"></div>
+      </div>
+
+      <!-- RIGHT COLUMN: Measure by Game chart -->
+      <div>
+        <div class="row-controls">
+          <div>
+            <h2 id="b-chartTitle" style="margin:0"></h2>
+            <p class="note" style="margin:4px 0 0">Pre-Game Day compared with Game Day for each game. Games without lodging data yet appear empty.</p>
+          </div>
+          <label class="filters" style="padding:0;border:0;background:none">Measure
+            <select data-state="measure">
+              <option value="revpar">RevPAR</option>
+              <option value="adr">ADR</option>
+              <option value="occupancy">Occupancy</option>
+            </select>
+          </label>
+        </div>
+        <div class="box">
+          <div class="chart" id="b-chart"></div>
+          <div class="chart-labels" id="b-chartLabels"></div>
+          <div class="legend">
+            <span><i style="background:var(--red)"></i>Pre-Game Day</span>
+            <span><i style="background:var(--black)"></i>Game Day</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Breakdown table -->
+    <div class="row-controls" style="margin-top:28px">
+      <div style="flex:1">
+        <h2 id="breakdownTitle" style="margin:0"></h2>
+        <p class="note" id="breakdownNote" style="margin:4px 0 0"></p>
+      </div>
+      <label class="filters" style="padding:0;border:0;background:none">Group By
+        <select data-state="groupBy" id="groupBy"></select>
+      </label>
+    </div>
+    <div class="box table-wrap"><table class="season" id="breakdownTable"></table></div>
+
+  </section>
+
+</main>
+
+<footer>
+  Schedule and results, Oklahoma State Athletics.
+  Pre-Game Day is the night before the game; Weekend combines Pre-Game Day and Game Day.
+  Lodging data for demonstration purposes only. Built <span id="built"></span>.
+</footer>
+
+
+<script>
+// =====================================================================
+// THE DATA. The Python script replaces the placeholder below with every
+// game and its lodging numbers. Don't edit this line by hand.
+// =====================================================================
+const DATA = {
+ "built": "November 12, 2026",
+ "lodgingThrough": "November 7, 2026",
+ "lodgingTypes": [
+  "Hotel",
+  "STR"
+ ],
+ "games": [
+  {
+   "season": 2025,
+   "label": "Game 1",
+   "homeAway": "Home",
+   "opponent": "UT Martin",
+   "date": "2025-08-28",
+   "preDate": "2025-08-27",
+   "weekday": "Thursday",
+   "kickoff": "6:30 PM",
+   "televised": "ESPN+",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Non-Conference",
+   "theme": "",
+   "result": "W 27-7",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "Oregon",
+   "date": "2025-09-06",
+   "preDate": "2025-09-05",
+   "weekday": "Saturday",
+   "kickoff": "11:00 AM",
+   "televised": "TNT Sports",
+   "ttuRank": null,
+   "oppRank": 5,
+   "conference": "Non-Conference",
+   "theme": "",
+   "result": "L 3-69",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "label": "Game 2",
+   "homeAway": "Home",
+   "opponent": "Tulsa",
+   "date": "2025-09-19",
+   "preDate": "2025-09-18",
+   "weekday": "Friday",
+   "kickoff": "2:30 PM",
+   "televised": "FOX",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Non-Conference",
+   "theme": "",
+   "result": "L 12-19",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "label": "Game 3",
+   "homeAway": "Home",
+   "opponent": "Baylor",
+   "date": "2025-09-27",
+   "preDate": "2025-09-26",
+   "weekday": "Saturday",
+   "kickoff": "11:00 AM",
+   "televised": "FOX",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "L 27-45",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "Arizona",
+   "date": "2025-10-04",
+   "preDate": "2025-10-03",
+   "weekday": "Saturday",
+   "kickoff": "2:30 PM",
+   "televised": "ESPN",
+   "ttuRank": null,
+   "oppRank": 17,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "L 13-41",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "label": "Game 4",
+   "homeAway": "Home",
+   "opponent": "Houston",
+   "date": "2025-10-11",
+   "preDate": "2025-10-10",
+   "weekday": "Saturday",
+   "kickoff": "6:00 PM",
+   "televised": "ESPN",
+   "ttuRank": null,
+   "oppRank": 21,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "L 17-39",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "label": "Game 5",
+   "homeAway": "Home",
+   "opponent": "Cincinnati",
+   "date": "2025-10-18",
+   "preDate": "2025-10-17",
+   "weekday": "Saturday",
+   "kickoff": "6:30 PM",
+   "televised": "FOX",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "Homecoming",
+   "result": "L 17-49",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "Texas Tech",
+   "date": "2025-10-25",
+   "preDate": "2025-10-24",
+   "weekday": "Saturday",
+   "kickoff": "3:00 PM",
+   "televised": "FOX",
+   "ttuRank": null,
+   "oppRank": 4,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "L 0-42",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "Kansas",
+   "date": "2025-11-01",
+   "preDate": "2025-10-31",
+   "weekday": "Saturday",
+   "kickoff": "3:00 PM",
+   "televised": "ESPNU",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "Family Weekend",
+   "result": "L 21-38",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "label": "Game 6",
+   "homeAway": "Home",
+   "opponent": "Kansas State",
+   "date": "2025-11-15",
+   "preDate": "2025-11-14",
+   "weekday": "Saturday",
+   "kickoff": "11:00 AM",
+   "televised": "ABC",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "L 6-14",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "UCF",
+   "date": "2025-11-22",
+   "preDate": "2025-11-21",
+   "weekday": "Saturday",
+   "kickoff": "2:30 PM",
+   "televised": "FOX",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "L 14-17",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2025,
+   "label": "Game 7",
+   "homeAway": "Home",
+   "opponent": "Iowa State",
+   "date": "2025-11-29",
+   "preDate": "2025-11-28",
+   "weekday": "Saturday",
+   "kickoff": "7:00 PM",
+   "televised": "CBS",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "Senior Day",
+   "result": "L 13-20",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "Tulsa",
+   "date": "2026-09-05",
+   "preDate": "2026-09-04",
+   "weekday": "Saturday",
+   "kickoff": "6:00 PM",
+   "televised": "",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Non-Conference",
+   "theme": "",
+   "result": "L 10-24",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Game 1",
+   "homeAway": "Home",
+   "opponent": "Oregon",
+   "date": "2026-09-12",
+   "preDate": "2026-09-11",
+   "weekday": "Saturday",
+   "kickoff": "6:30 PM",
+   "televised": "CBS",
+   "ttuRank": null,
+   "oppRank": 6,
+   "conference": "Non-Conference",
+   "theme": "",
+   "result": "W 39-31",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Game 2",
+   "homeAway": "Home",
+   "opponent": "Murray State",
+   "date": "2026-09-19",
+   "preDate": "2026-09-18",
+   "weekday": "Saturday",
+   "kickoff": "7:00 PM",
+   "televised": "FOX",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Non-Conference",
+   "theme": "",
+   "result": "W 59-0",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "West Virginia",
+   "date": "2026-09-26",
+   "preDate": "2026-09-25",
+   "weekday": "Saturday",
+   "kickoff": "11:00 AM",
+   "televised": "TNT",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "Family Weekend",
+   "result": "W 41-24",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "Bye Week",
+   "date": "2026-10-03",
+   "preDate": "2026-10-02",
+   "weekday": "Saturday",
+   "kickoff": "",
+   "televised": "",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "",
+   "theme": "",
+   "result": "",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Game 3",
+   "homeAway": "Home",
+   "opponent": "UCF",
+   "date": "2026-10-10",
+   "preDate": "2026-10-09",
+   "weekday": "Saturday",
+   "kickoff": "2:30 PM",
+   "televised": "CBS",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "W 42-28",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "Houston",
+   "date": "2026-10-17",
+   "preDate": "2026-10-16",
+   "weekday": "Saturday",
+   "kickoff": "2:30 PM",
+   "televised": "FOX",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "L 32-35",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Game 4",
+   "homeAway": "Home",
+   "opponent": "Colorado",
+   "date": "2026-10-24",
+   "preDate": "2026-10-23",
+   "weekday": "Saturday",
+   "kickoff": "11:00 AM",
+   "televised": "FS1",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "Homecoming",
+   "result": "W 57-24",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "Iowa State",
+   "date": "2026-10-31",
+   "preDate": "2026-10-30",
+   "weekday": "Saturday",
+   "kickoff": "11:00 AM",
+   "televised": "ESPN",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "L 49-51",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "Kansas State",
+   "date": "2026-11-07",
+   "preDate": "2026-11-06",
+   "weekday": "Saturday",
+   "kickoff": "8:30 PM",
+   "televised": "ESPN",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "W 66-28",
+   "nights": {
+    "pre": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    },
+    "game": {
+     "Hotel": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     },
+     "STR": {
+      "supply": 5000,
+      "demand": 3000,
+      "revenue": 375000.0
+     }
+    }
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Game 5",
+   "homeAway": "Home",
+   "opponent": "Texas Tech",
+   "date": "2026-11-14",
+   "preDate": "2026-11-13",
+   "weekday": "Saturday",
+   "kickoff": "8:30 PM",
+   "televised": "ESPN",
+   "ttuRank": null,
+   "oppRank": 10,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "",
+   "nights": {
+    "pre": null,
+    "game": null
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Away",
+   "homeAway": "Away",
+   "opponent": "Arizona State",
+   "date": "2026-11-21",
+   "preDate": "2026-11-20",
+   "weekday": "Saturday",
+   "kickoff": "2:30 PM",
+   "televised": "ESPN",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "",
+   "result": "",
+   "nights": {
+    "pre": null,
+    "game": null
+   }
+  },
+  {
+   "season": 2026,
+   "label": "Game 6",
+   "homeAway": "Home",
+   "opponent": "Kansas",
+   "date": "2026-11-28",
+   "preDate": "2026-11-27",
+   "weekday": "Saturday",
+   "kickoff": "2:30 PM",
+   "televised": "ESPN",
+   "ttuRank": null,
+   "oppRank": null,
+   "conference": "Big XII",
+   "theme": "Senior Day",
+   "result": "",
+   "nights": {
+    "pre": null,
+    "game": null
+   }
+  }
+ ]
+};
+
+
+// =====================================================================
+// PART 1: FORMATTING HELPERS
+// Small functions that turn raw numbers into display text.
+// "—" shows up whenever a number doesn't exist yet (future games).
+// =====================================================================
+const fmtPct   = v => v == null ? "—" : (v * 100).toFixed(1) + "%";
+const fmtMoney = v => v == null ? "—" : "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtWhole$ = v => v == null ? "—" : "$" + Math.round(v).toLocaleString("en-US");
+const fmtNum   = v => v == null ? "—" : Math.round(v).toLocaleString("en-US");
+
+// Turns "2026-09-05" into "9/5/2026".
+function fmtDate(iso) {
+  const [y, m, d] = iso.split("-");
+  return `${+m}/${+d}/${y}`;
+}
+
+// Makes text safe to drop into the page (so an opponent name with an
+// "&" or "<" in it can't break the HTML).
+function esc(text) {
+  return String(text).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+// fmt = the full format (cards, tables). chartFmt = the shorter format for
+// chart labels, rounded so the labels fit above narrow bars without overlapping.
+const MEASURES = {
+  occupancy: { name: "Occupancy", fmt: fmtPct,   chartFmt: fmtPct },
+  adr:       { name: "ADR",       fmt: fmtMoney, chartFmt: fmtWhole$ },
+  revpar:    { name: "RevPAR",    fmt: fmtMoney, chartFmt: fmtWhole$ },
+};
+
+// Change from one number to another, shown as "+2.0 pts" or "-3.1%".
+// Increases get OSU orange; decreases stay gray (never red for bad news).
+//   kind "pts"   = percentage-point change (for occupancy)
+//   kind "pct"   = percent change (for everything else)
+//   kind "money" = dollar difference (for revenue lift)
+function fmtChange(newV, oldV, kind) {
+  if (newV == null || oldV == null || (kind === "pct" && !oldV)) return "—";
+  let v, text;
+  if (kind === "pts") {
+    v = (newV - oldV) * 100;
+    text = Math.abs(v).toFixed(1) + " pts";
+  } else if (kind === "money") {
+    v = newV - oldV;
+    text = "$" + Math.round(Math.abs(v)).toLocaleString("en-US");
+  } else {
+    v = (newV / oldV - 1) * 100;
+    text = Math.abs(v).toFixed(1) + "%";
+  }
+  const sign = v >= 0 ? "+" : "−";
+  return `<span class="${v >= 0 ? "up" : "down"}">${sign}${text}</span>`;
+}
+
+// =====================================================================
+// PART 2: THE LODGING MATH
+// The only raw numbers we store are Supply, Demand, and Revenue.
+// We ADD those up first, and THEN calculate the percentages:
+//   Occupancy = Demand / Supply
+//   ADR       = Revenue / Demand
+//   RevPAR    = Revenue / Supply
+// (Averaging two occupancy percentages would give the wrong answer.)
+// =====================================================================
+
+// One night for one game. night is "pre" or "game".
+// Gives back { supply, demand, revenue }, or null if there's no data.
+function nightTotals(game, night, lodging) {
+  const n = game.nights[night];
+  if (!n) return null;
+  const types = lodging === "All" ? DATA.lodgingTypes : [lodging];
+  // If "All" is picked but one type is missing that night, show nothing
+  // rather than a total that's quietly missing half the rooms.
+  if (types.some(t => !n[t])) return null;
+  return sumTotals(types.map(t => n[t]));
+}
+
+// Adds a list of { supply, demand, revenue } together. Skips nulls.
+function sumTotals(list) {
+  const real = list.filter(x => x);
+  if (real.length === 0) return null;
+  return real.reduce((sum, t) => ({
+    supply:  sum.supply  + t.supply,
+    demand:  sum.demand  + t.demand,
+    revenue: sum.revenue + t.revenue,
+  }), { supply: 0, demand: 0, revenue: 0 });
+}
+
+// One game, one day type ("Pre-Game Day", "Game Day", or "Weekend").
+function dayTotals(game, dayType, lodging) {
+  if (dayType === "Weekend") {
+    const pre = nightTotals(game, "pre", lodging);
+    const gd  = nightTotals(game, "game", lodging);
+    return (pre && gd) ? sumTotals([pre, gd]) : null;   // need both nights
+  }
+  return nightTotals(game, dayType === "Pre-Game Day" ? "pre" : "game", lodging);
+}
+
+// Turns totals into all six measures.
+function metrics(t) {
+  if (!t || !t.supply) return null;
+  return {
+    occupancy: t.demand / t.supply,
+    adr:       t.demand ? t.revenue / t.demand : null,
+    revpar:    t.revenue / t.supply,
+    supply: t.supply, demand: t.demand, revenue: t.revenue,
+  };
+}
+
+
+// =====================================================================
+// PART 3: FILTERS
+// "state" remembers what's picked in every dropdown. Every time a
+// dropdown changes, we update state and redraw the page.
+// =====================================================================
+const seasons = [...new Set(DATA.games.map(g => g.season))].sort((a, b) => b - a);
+
+const state = {
+  season: seasons[0],      // newest season first
+  homeAway: "Home",
+  lodging: "All",
+  dayType: "Weekend",
+  measure: "revpar",
+  groupBy: "kickoff",   // Game Breakdown tab: which grouping is picked
+};
+
+// Fill the Season dropdown with every season in the data.
+document.getElementById("season").innerHTML =
+  seasons.map(s => `<option value="${s}">${s}</option>`).join("");
+
+// Games that match the Season and Home/Away dropdowns.
+function filteredGames() {
+  return DATA.games.filter(g =>
+    g.season === state.season &&
+    (state.homeAway === "All" || g.homeAway === state.homeAway)
+  );
+}
+
+// Short name for a game, used on the chart: "ACU" for home, "@ ORST" for away.
+// Uses the abbreviation from the Opponents tab, or the full name if there isn't one.
+function shortName(g) {
+  const name = g.opponent;
+  return g.homeAway === "Home" ? name : "@ " + name;
+}
+
+
+// =====================================================================
+// PART 4: DRAWING THE BY GAME TAB
+// Each function fills one empty box on the page.
+//
+// The cards and the chart appear on two tabs (By Game and Game Breakdown).
+// Each copy has its own ids, with "w-" or "b-" in front, so drawCards and
+// drawChart take that prefix and fill whichever copy they're told to.
+//   drawCards("w-")  fills the cards on By Game
+//   drawCards("b-")  fills the cards on Game Breakdown
+// =====================================================================
+
+// ---- 4a. KPI cards: season totals for the chosen day type ----
+function drawCards(p) {
+  const games = filteredGames();
+  const withData = games.filter(g => dayTotals(g, state.dayType, state.lodging));
+  const m = metrics(sumTotals(games.map(g => dayTotals(g, state.dayType, state.lodging))));
+
+  const who = state.homeAway === "All" ? "All Game" : state.homeAway + " Game";
+  // The title stays short so it fits on one line; the Day Type dropdown
+  // right beside it already says which nights these are, and the note repeats it.
+  document.getElementById(p + "cardsTitle").textContent = `${state.season} ${who} Totals`;
+  document.getElementById(p + "cardsNote").textContent =
+    `${state.dayType} nights. Based on ${withData.length} of ${games.length} games with lodging data so far.`;
+
+  const cards = [
+    ["Occupancy", m && fmtPct(m.occupancy)],
+    ["ADR",       m && fmtMoney(m.adr)],
+    ["RevPAR",    m && fmtMoney(m.revpar)],
+    ["Supply",    m && fmtNum(m.supply)],
+    ["Demand",    m && fmtNum(m.demand)],
+    ["Revenue",   m && fmtWhole$(m.revenue)],
+  ];
+  document.getElementById(p + "cards").innerHTML = cards.map(([label, value]) =>
+    `<div class="card"><div class="label">${label}</div><div class="value">${value || "—"}</div></div>`
+  ).join("");
+}
+
+// ---- 4b. Bar chart: Pre-Game Day vs Game Day for each game ----
+function drawChart(p) {
+  const games = filteredGames();
+  const measure = MEASURES[state.measure];
+  document.getElementById(p + "chartTitle").textContent = `${measure.name} by Game`;
+
+  // Get both bars' values for every game.
+  const rows = games.map(g => ({
+    name: shortName(g),
+    pre:  metrics(dayTotals(g, "Pre-Game Day", state.lodging)),
+    gd:   metrics(dayTotals(g, "Game Day", state.lodging)),
+  }));
+
+  // The tallest bar sets the scale; everything else is a share of it.
+  const values = rows.flatMap(r => [r.pre, r.gd]).filter(x => x).map(x => x[state.measure]);
+  const max = Math.max(...values, 0) || 1;
+
+  const bar = (m, cls) => {
+    if (!m) return `<div class="bar ${cls}" style="height:0"></div>`;
+    const v = m[state.measure];
+    return `<div class="bar ${cls}" style="height:${(v / max) * 100}%"><span>${measure.chartFmt(v)}</span></div>`;
+  };
+
+  document.getElementById(p + "chart").innerHTML = rows.map(r =>
+    `<div class="bar-group"><div class="bars">${bar(r.pre, "pre")}${bar(r.gd, "game")}</div></div>`
+  ).join("");
+  document.getElementById(p + "chartLabels").innerHTML = rows.map(r => `<div>${esc(r.name)}</div>`).join("");
+}
+
+// ---- 4c. Game-by-game table (like the Power BI matrix) ----
+function drawTable() {
+  const games = filteredGames();
+  const head = `<thead><tr>
+      <th>Game</th><th>Day</th><th>Date</th>
+      <th>Occupancy</th><th>ADR</th><th>RevPAR</th><th>Supply</th><th>Demand</th><th>Revenue</th>
+    </tr></thead>`;
+
+  const cells = m => [fmtPct(m && m.occupancy), fmtMoney(m && m.adr), fmtMoney(m && m.revpar),
+                      fmtNum(m && m.supply), fmtNum(m && m.demand), fmtWhole$(m && m.revenue)]
+                     .map(v => `<td>${m ? v : ""}</td>`).join("");
+
+  const body = games.map(g => {
+    const pre = metrics(dayTotals(g, "Pre-Game Day", state.lodging));
+    const gd  = metrics(dayTotals(g, "Game Day", state.lodging));
+    const wk  = metrics(dayTotals(g, "Weekend", state.lodging));
+
+    // The left-hand info cell spans all three rows (rowspan="3").
+	    // Builds "(13) TTU vs (25) Arizona" for home games and "(13) TTU at Oregon State"
+    // for away games. A ranking only shows if it's a number, so blanks
+    // and text like "NR" leave no empty parentheses behind.
+    const rank = r => typeof r === "number" ? `(${r}) ` : "";
+    const title = `${rank(g.ttuRank)}OSU ${g.homeAway === "Home" ? "vs" : "at"} ${rank(g.oppRank)}${g.opponent}`;
+    const details = [g.kickoff && `${g.weekday} ${g.kickoff}`, g.conference, g.theme, g.result]
+                      .filter(x => x).map(x => `<small>${esc(x)}</small>`).join("");
+    const info = `<td class="info" rowspan="3"><strong>${esc(title)}</strong>${details}</td>`;
+
+    return `
+      <tr>${info}<td class="day">Pre-Game Day</td><td class="date">${fmtDate(g.preDate)}</td>${cells(pre)}</tr>
+      <tr><td class="day">Game Day</td><td class="date">${fmtDate(g.date)}</td>${cells(gd)}</tr>
+      <tr class="weekend"><td class="day">Weekend</td><td class="date"></td>${cells(wk)}</tr>`;
+  }).join("");
+
+  document.getElementById("gameTable").innerHTML = head + `<tbody>${body}</tbody>`;
+}
+
+// =====================================================================
+// PART 4-OVERVIEW: SEASON COMPARISON AND THE FOOTBALL EFFECT
+// These ignore the Season, Home/Away, and Day Type dropdowns on purpose.
+// They always use weekends and only follow the Lodging Type dropdown.
+// =====================================================================
+ 
+// Every season in the data, oldest first (left to right in the tables).
+const seasonsOldestFirst = [...seasons].sort((a, b) => a - b);
+ 
+// Weekend numbers for one season, for "Home" or "Away" games.
+// Returns the rates (occupancy, ADR, RevPAR), the per-weekend averages
+// for supply, demand, and revenue, and how many games had data.
+function seasonStats(season, side) {
+  const games = DATA.games.filter(g => g.season === season && g.homeAway === side);
+  const weekends = games.map(g => dayTotals(g, "Weekend", state.lodging)).filter(x => x);
+  const total = sumTotals(weekends);
+  const m = metrics(total);
+  const n = weekends.length;
+  return {
+    games: games.length,
+    withData: n,
+    occupancy: m && m.occupancy,
+    adr: m && m.adr,
+    revpar: m && m.revpar,
+    avgSupply: n ? total.supply / n : null,
+    avgDemand: n ? total.demand / n : null,
+    avgRevenue: n ? total.revenue / n : null,
+  };
+}
+ 
+// The rows of the season table: the label, which number to show,
+// how to format it, and how to show its change from last season.
+const SEASON_ROWS = [
+  { label: "Occupancy",                key: "occupancy",  fmt: fmtPct,    change: "pts" },
+  { label: "ADR",                      key: "adr",        fmt: fmtMoney,  change: "pct" },
+  { label: "RevPAR",                   key: "revpar",     fmt: fmtMoney,  change: "pct" },
+  { label: "Avg. Supply per Weekend",  key: "avgSupply",  fmt: fmtNum,    change: "pct" },
+  { label: "Avg. Demand per Weekend",  key: "avgDemand",  fmt: fmtNum,    change: "pct" },
+  { label: "Avg. Revenue per Weekend", key: "avgRevenue", fmt: fmtWhole$, change: "pct" },
+];
+ 
+// ---- Season Comparison table ----
+function drawSeasonTable() {
+  // Only seasons that have at least one home weekend with lodging data.
+  const cols = seasonsOldestFirst
+    .map(season => ({ season, stats: seasonStats(season, "Home") }))
+    .filter(c => c.stats.withData > 0);
+ 
+  const table = document.getElementById("seasonTable");
+  if (cols.length === 0) {
+    table.innerHTML = `<tr><td>No lodging data yet.</td></tr>`;
+    return;
+  }
+ 
+  // The newest season, and the one before it (if there is one).
+  const latest = cols[cols.length - 1];
+  const prior = cols.length > 1 ? cols[cols.length - 2] : null;
+ 
+  // Header row: blank corner, one cell per season, then the Change column.
+  const head = `<thead><tr><th></th>` +
+    cols.map(c => `<th class="${c === latest ? "current" : ""}">${c.season}</th>`).join("") +
+    (prior ? `<th>Change vs. ${prior.season}</th>` : "") +
+    `</tr></thead>`;
+ 
+  // One row per measure.
+  const rows = SEASON_ROWS.map(r =>
+    `<tr><td>${r.label}</td>` +
+    cols.map(c => `<td class="${c === latest ? "current" : ""}">${r.fmt(c.stats[r.key])}</td>`).join("") +
+    (prior ? `<td class="change">${fmtChange(latest.stats[r.key], prior.stats[r.key], r.change)}</td>` : "") +
+    `</tr>`
+  ).join("");
+ 
+  // Last row: how many home games each season had data for.
+  const gamesRow = `<tr class="small"><td>Home games with lodging data</td>` +
+    cols.map(c => `<td class="${c === latest ? "current" : ""}">${c.stats.withData} of ${c.stats.games}</td>`).join("") +
+    (prior ? `<td></td>` : "") + `</tr>`;
+ 
+  table.innerHTML = head + `<tbody>${rows}${gamesRow}</tbody>`;
+ 
+  // While the newest season is still in progress, say so under the table.
+  const s = latest.stats;
+  document.getElementById("seasonNote").textContent =
+    (s.withData < s.games && prior)
+      ? `${latest.season} is through ${s.withData} of ${s.games} home games. The Change column compares it with all of ${prior.season}.`
+      : "";
+}
+ 
+// ---- The Football Effect, by season ----
+// For each season: home-game weekends compared with away-game weekends.
+function drawEffect() {
+  const cols = seasonsOldestFirst
+    .map(season => ({ season, home: seasonStats(season, "Home"), away: seasonStats(season, "Away") }))
+    .filter(c => c.home.withData > 0 && c.away.withData > 0);
+ 
+  const table = document.getElementById("effectTable");
+  if (cols.length === 0) {
+    table.innerHTML = `<tr><td>Not enough lodging data yet for both home and away weekends.</td></tr>`;
+    return;
+  }
+ 
+  const latest = cols[cols.length - 1];
+  const EFFECT_ROWS = [
+    { label: "Occupancy lift",               key: "occupancy",  change: "pts" },
+    { label: "ADR lift",                     key: "adr",        change: "pct" },
+    { label: "RevPAR lift",                  key: "revpar",     change: "pct" },
+    { label: "Avg. Demand lift per Weekend",  key: "avgDemand",  change: "pct" },
+    { label: "Avg. Revenue lift per Weekend", key: "avgRevenue", change: "money" },
+  ];
+ 
+  const head = `<thead><tr><th></th>` +
+    cols.map(c => `<th class="${c === latest ? "current" : ""}">${c.season}</th>`).join("") +
+    `</tr></thead>`;
+ 
+  const rows = EFFECT_ROWS.map(r =>
+    `<tr><td>${r.label}</td>` +
+    cols.map(c => `<td class="${c === latest ? "current" : ""}">${fmtChange(c.home[r.key], c.away[r.key], r.change)}</td>`).join("") +
+    `</tr>`
+  ).join("");
+ 
+  table.innerHTML = head + `<tbody>${rows}</tbody>`;
+}
+
+// =====================================================================
+// PART 4-BREAKDOWN: THE GAME BREAKDOWN TABLE
+// Sorts the season's games into groups (kickoff time, conference, ...)
+// and shows each group's lodging numbers side by side.
+// Uses the Season, Home/Away, Lodging Type, and Day Type dropdowns.
+// =====================================================================
+
+// Turns a kickoff like "6:30 PM" (or "18:30" / "18:30:00") into hours
+// after midnight (18.5). Gives back null if the kickoff is blank or
+// not a time (like "TBA").
+function kickoffHour(text) {
+  const m = /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i.exec((text || "").trim());
+  if (!m) return null;
+  let hour = +m[1];
+  if (m[3]) {                                    // has AM/PM
+    hour = hour % 12;                            // 12 AM -> 0, 12 PM -> 0 (fixed next line)
+    if (m[3].toUpperCase() === "PM") hour += 12; // 6 PM -> 18, 12 PM -> 12
+  }
+  return hour + m[2] / 60;
+}
+
+// Puts a kickoff into a bucket: before noon, noon to 5, after 5.
+function kickoffBucket(text) {
+  const h = kickoffHour(text);
+  if (h == null) return "";
+  if (h < 12) return "Morning";
+  if (h < 17) return "Afternoon";
+  return "Evening";
+}
+
+// THE GROUPINGS. Each one is a choice in the Group By dropdown.
+//   label: what the dropdown says
+//   group: a small function that looks at one game and says which
+//          group it belongs in. "" means "leave this game out".
+//   order: (optional) the left-to-right order of the columns.
+//          Without it, columns are sorted A to Z.
+//
+// TO ADD A GROUPING: copy one line, give it a new name before the colon,
+// and change the label and the group function. Every field a game has
+// is listed in the Python script, STEP 9 (opponent, televised, theme...).
+const GROUPINGS = {
+  kickoff: {
+    label: "Kickoff Time",
+    group: g => kickoffBucket(g.kickoff),
+    order: ["Morning", "Afternoon", "Evening"],
+  },
+  conference: {
+    label: "Conference vs Non-Conference",
+    group: g => !g.conference ? "" : g.conference === "Non-Conference" ? "Non-Conference" : "Conference",
+    order: ["Conference", "Non-Conference"],
+  },
+  network: {
+    label: "Broadcast Network", 
+	group: g => g.televised,
+  },
+  gameday: {
+    label: "Day of Week", 
+	group: g => g.weekday, 
+    order: ["Thursday", "Friday", "Saturday"], 	
+  }, 
+  theme: {
+    label: "Game Theme", 
+	group: g => g.theme || "No Theme", 
+  }, 
+  
+};
+
+// Notes shown under the table title for a few groupings.
+const GROUP_NOTES = {
+  kickoff: "Morning is before noon, Afternoon is noon to 5 PM, Evening is 5 PM or later.",
+};
+
+// Rows of the breakdown table. Supply, demand, and revenue are averages
+// per game, so a group with 4 games compares fairly with a group of 2.
+const BREAKDOWN_ROWS = [
+  { label: "Occupancy",            key: "occupancy",  fmt: fmtPct },
+  { label: "ADR",                  key: "adr",        fmt: fmtMoney },
+  { label: "RevPAR",               key: "revpar",     fmt: fmtMoney },
+  { label: "Avg. Supply per Game",  key: "avgSupply",  fmt: fmtNum },
+  { label: "Avg. Demand per Game",  key: "avgDemand",  fmt: fmtNum },
+  { label: "Avg. Revenue per Game", key: "avgRevenue", fmt: fmtWhole$ },
+];
+
+// Fill the Group By dropdown with every grouping above.
+document.getElementById("groupBy").innerHTML =
+  Object.entries(GROUPINGS).map(([key, g]) => `<option value="${key}">${g.label}</option>`).join("");
+
+// The three day types, in the order they appear under each measure.
+const DAY_TYPES = ["Pre-Game Day", "Game Day", "Weekend"];
+function drawBreakdown() {
+  const grouping = GROUPINGS[state.groupBy];
+ 
+  // Sort this season's games into groups: { "Morning": [game, game], ... }
+  const groups = {};
+  filteredGames().forEach(g => {
+    const name = grouping.group(g);
+    if (!name) return;                  // no group for this game (e.g. no kickoff time)
+    (groups[name] = groups[name] || []).push(g);
+  });
+ 
+  // Column order: groups named in the grouping's "order" come first, in
+  // that order. Any other groups (or all of them, if there's no order)
+  // follow A to Z, so a group missing from the order list never vanishes.
+  // Groups with no games this season are left out.
+  const order = grouping.order || [];
+  const names = [
+    ...order.filter(n => groups[n]),
+    ...Object.keys(groups).filter(n => !order.includes(n)).sort(),
+  ];
+ 
+  // One group's numbers for one day type: add up the nights, then work
+  // out the measures. Supply, demand, and revenue are averages per game.
+  function groupStats(games, dayType) {
+    const totals = games.map(g => dayTotals(g, dayType, state.lodging)).filter(x => x);
+    const sum = sumTotals(totals);
+    const m = metrics(sum);
+    const n = totals.length;
+    return {
+      withData: n,
+      occupancy: m && m.occupancy, adr: m && m.adr, revpar: m && m.revpar,
+      avgSupply: n ? sum.supply / n : null,
+      avgDemand: n ? sum.demand / n : null,
+      avgRevenue: n ? sum.revenue / n : null,
+    };
+  }
+ 
+  // Each column: the group's name, how many games, and its numbers for
+  // each day type, like cols[0].byDay["Game Day"].occupancy
+  const cols = names.map(name => {
+    const byDay = {};
+    DAY_TYPES.forEach(d => byDay[d] = groupStats(groups[name], d));
+    return { name, games: groups[name].length, byDay };
+  });
+ 
+  const who = state.homeAway === "All" ? "All Game" : state.homeAway + " Game";
+  document.getElementById("breakdownTitle").textContent = `${state.season} ${who}s by ${grouping.label}`;
+  // This table always shows all three day types, so the Day Type dropdown
+  // up top only changes the cards and chart. The note says so.
+  document.getElementById("breakdownNote").textContent =
+    [GROUP_NOTES[state.groupBy], "Every measure is shown for Pre-Game Day, Game Day, and the Weekend."]
+      .filter(x => x).join(" ");
+ 
+  const table = document.getElementById("breakdownTable");
+  if (cols.length === 0) {
+    table.innerHTML = `<tr><td>No games to group for this selection.</td></tr>`;
+    return;
+  }
+ 
+  // Header: two blank corners (measure, day type), then one column per group.
+  const head = `<thead><tr><th></th><th></th>` + cols.map(c => `<th>${esc(c.name)}</th>`).join("") + `</tr></thead>`;
+ 
+  // Three rows per measure. The measure's name sits in the first row
+  // and stretches down beside all three (rowspan="3").
+  const rows = BREAKDOWN_ROWS.map(r =>
+    DAY_TYPES.map((d, i) =>
+      `<tr class="${d === "Weekend" ? "weekend" : ""}">` +
+      (i === 0 ? `<td rowspan="3" class="measure">${r.label}</td>` : "") +
+      `<td class="daytype">${d}</td>` +
+      cols.map(c => `<td>${r.fmt(c.byDay[d][r.key])}</td>`).join("") +
+      `</tr>`
+    ).join("")
+  ).join("");
+ 
+  // Game count matters here: a column built from one game can swing wildly.
+  // It counts games with both nights of data (a full weekend).
+  const countRow = `<tr class="small"><td colspan="2">Games with lodging data</td>` +
+    cols.map(c => `<td>${c.byDay["Weekend"].withData} of ${c.games}</td>`).join("") + `</tr>`;
+ 
+  table.innerHTML = head + `<tbody>${rows}${countRow}</tbody>`;
+}
+
+
+// =====================================================================
+// PART 5: REDRAW EVERYTHING
+// Called once when the page opens, and again after every dropdown change.
+// When you build a new tab, add its draw function to this list.
+// =====================================================================
+function drawAll() {
+  // Overview
+  drawSeasonTable();
+  drawEffect();
+  // By Game
+  drawCards("w-");
+  drawChart("w-");
+  drawTable();
+  // Game Breakdown
+  drawCards("b-");
+  drawChart("b-");
+  drawBreakdown();
+}
+
+
+// =====================================================================
+// PART 6: WIRING UP THE CONTROLS
+// =====================================================================
+
+// Dropdowns: every dropdown has a data-state="..." naming the setting it
+// controls (season, homeAway, lodging, dayType, measure, groupBy).
+// When one changes: save the choice, make every OTHER dropdown for the
+// same setting match (Day Type and Measure appear on two tabs), and redraw.
+document.querySelectorAll("select[data-state]").forEach(sel => {
+  sel.addEventListener("change", () => {
+    const key = sel.dataset.state;
+    state[key] = key === "season" ? +sel.value : sel.value;   // season is a number
+    document.querySelectorAll(`select[data-state="${key}"]`).forEach(other => other.value = sel.value);
+    drawAll();
+  });
+});
+
+// Tabs: switch to a tab by its name ("overview", "weekend", "breakdown").
+// Un-highlights every tab, highlights the chosen one, shows its section,
+// and saves the choice so the page reopens on the same tab.
+function showTab(name) {
+  const btn = document.querySelector(`.tabs button[data-tab="${name}"]`);
+  const panel = document.getElementById("tab-" + name);
+  if (!btn || !panel) return;   // a saved tab that no longer exists: stay put
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  btn.classList.add("active");
+  panel.classList.add("active");
+  document.body.dataset.tab = name;   // lets the CSS hide filters on Overview
+  // try/catch: some browsers block saving (private windows, strict settings).
+  // If saving fails, the page still works; it just won't remember.
+  try { localStorage.setItem("lodgingTab", name); } catch (e) {}
+}
+
+// Clicking a tab button switches to that tab.
+document.querySelectorAll(".tabs button").forEach(btn =>
+  btn.addEventListener("click", () => showTab(btn.dataset.tab))
+);
+
+// When the page opens, go back to the last tab this person was on.
+try {
+  const saved = localStorage.getItem("lodgingTab");
+  if (saved) showTab(saved);
+} catch (e) {}
+
+// Fill in the dates in the header and footer, then draw the page.
+document.getElementById("through").textContent = DATA.lodgingThrough;
+document.getElementById("built").textContent = DATA.built;
+drawAll();
+</script>
+</body>
+</html>
